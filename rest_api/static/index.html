@@ -282,8 +282,6 @@
   <div class="connection">
     <span class="dot" id="statusDot"></span>
     <span id="statusText">checking connection…</span>
-    <input id="apiBase" type="text" placeholder="https://your-api.onrender.com" />
-    <button id="connectBtn">Connect</button>
   </div>
 
   <div class="panel">
@@ -311,24 +309,16 @@
 </div>
 
 <script>
-  const LS_KEY = 'library_api_base';
-  let API_BASE = localStorage.getItem(LS_KEY) || '';
+  // Same-origin: the API is served by this same Flask app, so no URL entry needed.
+  const API_BASE = window.location.origin;
 
   const shelf = document.getElementById('shelf');
   const bookCount = document.getElementById('bookCount');
   const statusDot = document.getElementById('statusDot');
   const statusText = document.getElementById('statusText');
-  const apiBaseInput = document.getElementById('apiBase');
-  const connectBtn = document.getElementById('connectBtn');
   const addForm = document.getElementById('addForm');
   const addBtn = document.getElementById('addBtn');
   const formError = document.getElementById('formError');
-
-  apiBaseInput.value = API_BASE;
-
-  function cleanBase(v){
-    return v.trim().replace(/\/+$/, '');
-  }
 
   function showFormError(msg){
     formError.textContent = msg;
@@ -340,32 +330,22 @@
   }
 
   async function checkConnection(){
-    if(!API_BASE){
-      statusDot.className = 'dot bad';
-      statusText.textContent = 'no API URL set — paste it on the right and click Connect';
-      return false;
-    }
     statusDot.className = 'dot';
     statusText.textContent = 'connecting…';
     try{
       const res = await fetch(API_BASE + '/books');
       if(!res.ok) throw new Error('bad status ' + res.status);
       statusDot.className = 'dot ok';
-      statusText.textContent = 'connected — ' + API_BASE;
+      statusText.textContent = 'connected';
       return true;
     }catch(err){
       statusDot.className = 'dot bad';
-      statusText.textContent = 'could not reach that URL (may still be waking up — try again in a moment)';
+      statusText.textContent = 'could not reach the server (it may still be waking up — hang tight and reload in ~50s)';
       return false;
     }
   }
 
   async function loadBooks(){
-    if(!API_BASE){
-      shelf.innerHTML = '<div class="empty">Set your API URL above to load the catalog.</div>';
-      bookCount.textContent = '';
-      return;
-    }
     shelf.innerHTML = '<div class="loading">loading catalog…</div>';
     try{
       const res = await fetch(API_BASE + '/books');
@@ -456,20 +436,9 @@
     }
   }
 
-  connectBtn.addEventListener('click', async () => {
-    API_BASE = cleanBase(apiBaseInput.value);
-    localStorage.setItem(LS_KEY, API_BASE);
-    await checkConnection();
-    loadBooks();
-  });
-
   addForm.addEventListener('submit', async (e) => {
     e.preventDefault();
     clearFormError();
-    if(!API_BASE){
-      showFormError('Set your API URL above first.');
-      return;
-    }
     const title = document.getElementById('fTitle').value.trim();
     const author = document.getElementById('fAuthor').value.trim();
     const isbn = document.getElementById('fIsbn').value.trim();
