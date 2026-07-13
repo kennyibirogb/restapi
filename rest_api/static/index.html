@@ -1,0 +1,515 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Library Catalog</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&family=IBM+Plex+Mono:wght@400;500&family=Inter:wght@400;500;600&display=swap');
+
+  :root{
+    --card: #F2ECDD;
+    --card-line: #C9BFA3;
+    --ink: #2B2620;
+    --ink-soft: #6E6455;
+    --spine: #6B3A2A;
+    --spine-dark: #4E2A1E;
+    --stamp: #8A2E2E;
+    --available: #3D6B4F;
+    --unavailable: #A34A2E;
+    --paper: #EFE7D3;
+  }
+
+  *{ box-sizing:border-box; }
+  html,body{ margin:0; padding:0; }
+  body{
+    background: var(--paper);
+    background-image:
+      repeating-linear-gradient(0deg, rgba(0,0,0,0.015) 0px, rgba(0,0,0,0.015) 1px, transparent 1px, transparent 3px);
+    color: var(--ink);
+    font-family: 'Inter', sans-serif;
+    min-height: 100vh;
+    padding: 40px 20px 80px;
+  }
+
+  .wrap{ max-width: 920px; margin: 0 auto; }
+
+  header{
+    display:flex;
+    align-items:flex-end;
+    justify-content:space-between;
+    gap: 24px;
+    border-bottom: 3px solid var(--ink);
+    padding-bottom: 18px;
+    margin-bottom: 8px;
+    flex-wrap: wrap;
+  }
+  header h1{
+    font-family: 'Fraunces', serif;
+    font-weight: 700;
+    font-size: clamp(32px, 5vw, 46px);
+    margin: 0;
+    letter-spacing: -0.01em;
+  }
+  header .tag{
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: var(--ink-soft);
+  }
+
+  .connection{
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 12px;
+    color: var(--ink-soft);
+    margin: 14px 0 30px;
+    display:flex;
+    align-items:center;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+  .connection input{
+    flex: 1 1 260px;
+    min-width: 200px;
+    font-family: inherit;
+    font-size: 12px;
+    background: var(--card);
+    border: 1px solid var(--card-line);
+    padding: 7px 10px;
+    color: var(--ink);
+  }
+  .connection button{
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    background: var(--ink);
+    color: var(--paper);
+    border: none;
+    padding: 8px 14px;
+    cursor: pointer;
+  }
+  .connection button:hover{ background: var(--spine-dark); }
+  .dot{
+    width: 8px; height: 8px; border-radius: 50%;
+    background: var(--ink-soft);
+    flex-shrink: 0;
+  }
+  .dot.ok{ background: var(--available); }
+  .dot.bad{ background: var(--unavailable); }
+
+  .panel{
+    background: var(--card);
+    border: 1px solid var(--card-line);
+    padding: 22px 24px;
+    margin-bottom: 36px;
+  }
+  .panel h2{
+    font-family: 'Fraunces', serif;
+    font-size: 19px;
+    margin: 0 0 16px;
+    display:flex;
+    align-items:center;
+    gap: 10px;
+  }
+  .panel h2::before{
+    content: "";
+    width: 5px; height: 5px;
+    background: var(--spine);
+    display:inline-block;
+  }
+
+  form.addform{
+    display:grid;
+    grid-template-columns: 2fr 1.4fr 1.2fr auto;
+    gap: 10px;
+  }
+  @media (max-width: 620px){
+    form.addform{ grid-template-columns: 1fr; }
+  }
+  form.addform input{
+    font-family: 'Inter', sans-serif;
+    font-size: 14px;
+    padding: 10px 12px;
+    background: var(--paper);
+    border: 1px solid var(--card-line);
+    color: var(--ink);
+  }
+  form.addform input:focus{ outline: 2px solid var(--spine); outline-offset: 1px; }
+  form.addform button{
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    background: var(--spine);
+    color: var(--paper);
+    border: none;
+    padding: 10px 18px;
+    cursor: pointer;
+    transition: background 0.15s ease;
+  }
+  form.addform button:hover{ background: var(--spine-dark); }
+  form.addform button:disabled{ background: var(--ink-soft); cursor: default; }
+
+  .formnote{
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    color: var(--ink-soft);
+    margin-top: 10px;
+  }
+  .formerror{
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 12px;
+    color: var(--stamp);
+    margin-top: 10px;
+    display: none;
+  }
+
+  .shelf-head{
+    display:flex;
+    align-items:baseline;
+    justify-content:space-between;
+    margin-bottom: 14px;
+  }
+  .shelf-head h2{ margin:0; }
+  .count{
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 12px;
+    color: var(--ink-soft);
+  }
+
+  .cards{
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    gap: 14px;
+  }
+
+  .card{
+    position: relative;
+    background: var(--card);
+    border: 1px solid var(--card-line);
+    padding: 16px 16px 14px;
+    display:flex;
+    flex-direction:column;
+    gap: 6px;
+  }
+  .card::before{
+    content:"";
+    position:absolute;
+    left:0; top:0; bottom:0;
+    width: 5px;
+    background: var(--spine);
+  }
+  .card .title{
+    font-family: 'Fraunces', serif;
+    font-weight: 600;
+    font-size: 17px;
+    line-height: 1.25;
+    padding-right: 4px;
+  }
+  .card .author{
+    font-family: 'Inter', sans-serif;
+    font-size: 13px;
+    color: var(--ink-soft);
+  }
+  .card .isbn{
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    color: var(--ink-soft);
+    letter-spacing: 0.02em;
+  }
+  .card .row{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    margin-top: 8px;
+  }
+  .status{
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    padding: 3px 8px;
+    border: 1px solid currentColor;
+    cursor: pointer;
+    background: none;
+  }
+  .status.available{ color: var(--available); }
+  .status.unavailable{ color: var(--unavailable); }
+  .status:hover{ background: rgba(0,0,0,0.04); }
+
+  .remove{
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--ink-soft);
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 3px 4px;
+  }
+  .remove:hover{ color: var(--stamp); }
+
+  .empty, .loading, .apierror{
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 13px;
+    color: var(--ink-soft);
+    padding: 30px 0;
+    text-align: center;
+    border: 1px dashed var(--card-line);
+  }
+  .apierror{ color: var(--stamp); border-color: var(--unavailable); }
+
+  footer{
+    margin-top: 40px;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    color: var(--ink-soft);
+    text-align: center;
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <h1>Library Catalog</h1>
+    <div class="tag">Reg. via Flask &amp; SQLite</div>
+  </header>
+
+  <div class="connection">
+    <span class="dot" id="statusDot"></span>
+    <span id="statusText">checking connection…</span>
+    <input id="apiBase" type="text" placeholder="https://your-api.onrender.com" />
+    <button id="connectBtn">Connect</button>
+  </div>
+
+  <div class="panel">
+    <h2>Add a book</h2>
+    <form class="addform" id="addForm">
+      <input type="text" id="fTitle" placeholder="Title" required />
+      <input type="text" id="fAuthor" placeholder="Author" required />
+      <input type="text" id="fIsbn" placeholder="ISBN (10 or 13 digits)" required />
+      <button type="submit" id="addBtn">Add</button>
+    </form>
+    <div class="formerror" id="formError"></div>
+    <div class="formnote">First request may take up to a minute — free hosting sleeps when idle.</div>
+  </div>
+
+  <div class="shelf-head">
+    <h2>On the shelf</h2>
+    <span class="count" id="bookCount"></span>
+  </div>
+
+  <div id="shelf">
+    <div class="loading">loading catalog…</div>
+  </div>
+
+  <footer>catalog interface — reads and writes directly to the live API</footer>
+</div>
+
+<script>
+  const LS_KEY = 'library_api_base';
+  let API_BASE = localStorage.getItem(LS_KEY) || '';
+
+  const shelf = document.getElementById('shelf');
+  const bookCount = document.getElementById('bookCount');
+  const statusDot = document.getElementById('statusDot');
+  const statusText = document.getElementById('statusText');
+  const apiBaseInput = document.getElementById('apiBase');
+  const connectBtn = document.getElementById('connectBtn');
+  const addForm = document.getElementById('addForm');
+  const addBtn = document.getElementById('addBtn');
+  const formError = document.getElementById('formError');
+
+  apiBaseInput.value = API_BASE;
+
+  function cleanBase(v){
+    return v.trim().replace(/\/+$/, '');
+  }
+
+  function showFormError(msg){
+    formError.textContent = msg;
+    formError.style.display = 'block';
+  }
+  function clearFormError(){
+    formError.style.display = 'none';
+    formError.textContent = '';
+  }
+
+  async function checkConnection(){
+    if(!API_BASE){
+      statusDot.className = 'dot bad';
+      statusText.textContent = 'no API URL set — paste it on the right and click Connect';
+      return false;
+    }
+    statusDot.className = 'dot';
+    statusText.textContent = 'connecting…';
+    try{
+      const res = await fetch(API_BASE + '/books');
+      if(!res.ok) throw new Error('bad status ' + res.status);
+      statusDot.className = 'dot ok';
+      statusText.textContent = 'connected — ' + API_BASE;
+      return true;
+    }catch(err){
+      statusDot.className = 'dot bad';
+      statusText.textContent = 'could not reach that URL (may still be waking up — try again in a moment)';
+      return false;
+    }
+  }
+
+  async function loadBooks(){
+    if(!API_BASE){
+      shelf.innerHTML = '<div class="empty">Set your API URL above to load the catalog.</div>';
+      bookCount.textContent = '';
+      return;
+    }
+    shelf.innerHTML = '<div class="loading">loading catalog…</div>';
+    try{
+      const res = await fetch(API_BASE + '/books');
+      if(!res.ok) throw new Error('status ' + res.status);
+      const books = await res.json();
+      renderBooks(books);
+    }catch(err){
+      shelf.innerHTML = '<div class="apierror">Could not load books. The server may be waking up — wait ~50s and reload, or check the API URL.</div>';
+      bookCount.textContent = '';
+    }
+  }
+
+  function renderBooks(books){
+    bookCount.textContent = books.length + (books.length === 1 ? ' book' : ' books');
+    if(books.length === 0){
+      shelf.innerHTML = '<div class="empty">The shelf is empty. Add the first book above.</div>';
+      return;
+    }
+    shelf.innerHTML = '';
+    const grid = document.createElement('div');
+    grid.className = 'cards';
+    books.forEach(b => grid.appendChild(bookCard(b)));
+    shelf.appendChild(grid);
+  }
+
+  function bookCard(b){
+    const card = document.createElement('div');
+    card.className = 'card';
+
+    const title = document.createElement('div');
+    title.className = 'title';
+    title.textContent = b.title;
+
+    const author = document.createElement('div');
+    author.className = 'author';
+    author.textContent = b.author;
+
+    const isbn = document.createElement('div');
+    isbn.className = 'isbn';
+    isbn.textContent = 'ISBN ' + b.isbn;
+
+    const row = document.createElement('div');
+    row.className = 'row';
+
+    const status = document.createElement('button');
+    status.className = 'status ' + (b.available ? 'available' : 'unavailable');
+    status.textContent = b.available ? 'available' : 'checked out';
+    status.title = 'Click to toggle';
+    status.addEventListener('click', () => toggleAvailable(b));
+
+    const remove = document.createElement('button');
+    remove.className = 'remove';
+    remove.textContent = 'remove';
+    remove.addEventListener('click', () => deleteBook(b));
+
+    row.appendChild(status);
+    row.appendChild(remove);
+
+    card.appendChild(title);
+    card.appendChild(author);
+    card.appendChild(isbn);
+    card.appendChild(row);
+    return card;
+  }
+
+  async function toggleAvailable(b){
+    try{
+      const res = await fetch(API_BASE + '/books/' + b.id, {
+        method: 'PUT',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({ available: !b.available })
+      });
+      if(!res.ok) throw new Error('status ' + res.status);
+      loadBooks();
+    }catch(err){
+      alert('Could not update this book. Try again in a moment.');
+    }
+  }
+
+  async function deleteBook(b){
+    if(!confirm('Remove "' + b.title + '" from the catalog?')) return;
+    try{
+      const res = await fetch(API_BASE + '/books/' + b.id, { method: 'DELETE' });
+      if(!res.ok) throw new Error('status ' + res.status);
+      loadBooks();
+    }catch(err){
+      alert('Could not remove this book. Try again in a moment.');
+    }
+  }
+
+  connectBtn.addEventListener('click', async () => {
+    API_BASE = cleanBase(apiBaseInput.value);
+    localStorage.setItem(LS_KEY, API_BASE);
+    await checkConnection();
+    loadBooks();
+  });
+
+  addForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    clearFormError();
+    if(!API_BASE){
+      showFormError('Set your API URL above first.');
+      return;
+    }
+    const title = document.getElementById('fTitle').value.trim();
+    const author = document.getElementById('fAuthor').value.trim();
+    const isbn = document.getElementById('fIsbn').value.trim();
+
+    if(!title || !author || !isbn){
+      showFormError('Title, author, and ISBN are all required.');
+      return;
+    }
+    if(isbn.length !== 10 && isbn.length !== 13){
+      showFormError('ISBN should be 10 or 13 characters.');
+      return;
+    }
+
+    addBtn.disabled = true;
+    addBtn.textContent = 'Adding…';
+    try{
+      const res = await fetch(API_BASE + '/books', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({ title, author, isbn })
+      });
+      if(!res.ok){
+        const errData = await res.json().catch(() => ({}));
+        throw new Error(errData.error || ('status ' + res.status));
+      }
+      addForm.reset();
+      loadBooks();
+    }catch(err){
+      showFormError('Could not add book: ' + err.message);
+    }finally{
+      addBtn.disabled = false;
+      addBtn.textContent = 'Add';
+    }
+  });
+
+  // initial load
+  (async () => {
+    await checkConnection();
+    loadBooks();
+  })();
+</script>
+</body>
+</html>
